@@ -2,6 +2,10 @@ name: 'Package Zip'
 on:
   workflow_call:
     inputs:
+      ref:
+        description: 'Git commit ref (branch, tag, or hash)'
+        required: true
+        type: string
       final:
         description: 'Zip type: 0 = dev, 1 = production'
         required: false
@@ -24,7 +28,7 @@ jobs:
       - name: If a workflow_dispatch, set final based on input
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "JOB_FINAL=${{ github.event.inputs.final }}" >> $GITHUB_ENV
+          echo "JOB_FINAL=${{ inputs.final }}" >> $GITHUB_ENV
           branch=$(echo "${{ github.ref }}" | sed -r "s|refs/heads/||" | sed -r "s|refs/tags/||")
           echo "JOB_BRANCH=${branch}" >> $GITHUB_ENV
       - name: Setup branch for consumption in subsequent steps
@@ -49,7 +53,7 @@ jobs:
           fetch-depth: 1000
           token: ${{ secrets.GH_BOT_TOKEN }}
           submodules: recursive
-          ref: ${{ steps.settings.outputs.branch }}
+          ref: ${{ inputs.ref }}
       - name: Checkout tut
         uses: actions/checkout@v2
         with:
@@ -181,7 +185,7 @@ jobs:
           COMMAND: sync
           SOURCE_DIR: /github/workspace/zip
       - name: Maybe prep data for Slack message
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.slack_channel != '' && github.event.inputs.slack_thread != '' && steps.s3_zip.outcome == 'success'
+        if: github.event_name == 'workflow_dispatch' && inputs.slack_channel != '' && inputs.slack_thread != '' && steps.s3_zip.outcome == 'success'
         working-directory: ../
         run: |
           touch ${GITHUB_WORKSPACE}/results.txt
@@ -192,7 +196,7 @@ jobs:
           echo "* ./zip/\"${{ steps.file_name.outputs.value }}\"" >> ${GITHUB_WORKSPACE}/results.txt
           echo "" >> ${GITHUB_WORKSPACE}/results.txt
       - name: Maybe notify in Slack
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.slack_channel != '' && github.event.inputs.slack_thread != ''
+        if: github.event_name == 'workflow_dispatch' && inputs.slack_channel != '' && inputs.slack_thread != ''
         working-directory: ../
         run: |
-          php ${GITHUB_WORKSPACE}/jenkins-scripts/mt-jenkins package:send-results --channel ${{ github.event.inputs.slack_channel }} --ts ${{ github.event.inputs.slack_thread }} --results-file "${GITHUB_WORKSPACE}/results.txt" --slack-token ${{ secrets.SLACK_TOKEN }} --build-url https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          php ${GITHUB_WORKSPACE}/jenkins-scripts/mt-jenkins package:send-results --channel ${{ inputs.slack_channel }} --ts ${{ inputs.slack_thread }} --results-file "${GITHUB_WORKSPACE}/results.txt" --slack-token ${{ secrets.SLACK_TOKEN }} --build-url https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
