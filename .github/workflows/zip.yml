@@ -9,13 +9,16 @@ on:
       final:
         description: 'Zip type: 0 = dev, 1 = production'
         required: false
+        type: string
         default: '0'
       slack_channel:
         description: 'Slack channel ID to post to'
         required: false
+        type: string
       slack_thread:
         description: 'Slack thread to post to'
         required: false
+        type: string
 jobs:
   zip:
     runs-on: ubuntu-latest
