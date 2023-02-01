@@ -1,7 +1,6 @@
 name: 'Package Zip'
 on:
-  pull_request:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       final:
         description: 'Zip type: 0 = dev, 1 = production'
